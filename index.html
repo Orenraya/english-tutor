@@ -124,7 +124,7 @@ async function ask(msg){
     if(voice){stat("מדבר…");var nx=function(){say(reply,listen)};if(fixedTxt)say("Better: "+fixedTxt+".",nx);else nx()}else say(reply);
   }catch(e){
     d.remove();
-    var m=e&&e.code==="none"?"חסר מפתח API. לחצו על ⚙️ והזינו מפתח חינמי.":e&&e.code==="rate_limited"?"יותר מדי בקשות, נסו שוב בעוד רגע.":e&&e.code==="http"?"שגיאה מהשירות: "+e.message:"משהו השתבש, נסו לשלוח שוב.";
+    var m=e&&e.code==="none"?"חסר מפתח API. לחצו על ⚙️ והזינו מפתח חינמי.":e&&e.code==="rate_limited"?"יותר מדי בקשות, נסו שוב בעוד רגע.":e&&e.name==="AbortError"?"השירות לא ענה תוך 30 שניות. בדקו חיבור ונסו שוב.":e&&e.code==="http"?"שגיאה מהשירות: "+e.message:"משהו השתבש, נסו לשלוח שוב.";
     note(m);if(msg)hist.pop();if(voice)stopVoice();
   }
   busy=false;go.disabled=false;scroll();
@@ -192,8 +192,9 @@ prov.onchange=function(){fill(prov.value)};
 document.getElementById("gear").onclick=function(){setEl.hidden=!setEl.hidden};
 document.getElementById("sv").onclick=function(){var p=prov.value;ls("prov",p);ls("k_"+p,kEl.value.trim());ls("m_"+p,mEl.value.trim()||DEF[p]);setEl.hidden=true;note("ההגדרות נשמרו");if(!hist.length&&kEl.value.trim())ask(null)};
 fill(ls("prov")||"gemini");
+function ftch(u,o){var c=new AbortController(),t=setTimeout(function(){c.abort()},30000);o.signal=c.signal;return fetch(u,o).finally(function(){clearTimeout(t)})}
 async function pickGemini(k){
-  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",{headers:{"x-goog-api-key":k}});
+  var r=await ftch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",{headers:{"x-goog-api-key":k}});
   var j=await r.json(),best=null,bv=-1;
   (j.models||[]).forEach(function(x){
     var n=(x.name||"").replace("models/",""),mt=/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?$/.exec(n);
@@ -203,15 +204,16 @@ async function pickGemini(k){
   });
   return best
 }
-async function llm(q,retried){
+async function llm(q,retried,notc){
   var pv=ls("prov")||"gemini",k=ls("k_"+pv),m=ls("m_"+pv)||DEF[pv],res;
   if(!k)throw {code:"none"};
   if(pv==="gemini"){
-    res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(m)+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":k},body:JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:{responseMimeType:"application/json",temperature:.8}})});
+    res=await ftch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(m)+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":k},body:JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:Object.assign({responseMimeType:"application/json",temperature:.8},notc?{}:{thinkingConfig:{thinkingLevel:"low"}})})});
   }else{
-    res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+k},body:JSON.stringify({model:m,messages:[{role:"user",content:q}],response_format:{type:"json_object"},temperature:.8})});
+    res=await ftch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+k},body:JSON.stringify({model:m,messages:[{role:"user",content:q}],response_format:{type:"json_object"},temperature:.8})});
   }
-  if(res.status===404&&pv==="gemini"&&!retried){var nm=await pickGemini(k).catch(function(){});if(nm&&nm!==m){ls("m_gemini",nm);mEl.value=nm;note("המודל עודכן אוטומטית: "+nm);return llm(q,true)}}
+  if(res.status===404&&pv==="gemini"&&!retried){var nm=await pickGemini(k).catch(function(){});if(nm&&nm!==m){ls("m_gemini",nm);mEl.value=nm;note("המודל עודכן אוטומטית: "+nm);return llm(q,true,notc)}}
+  if(res.status===400&&pv==="gemini"&&!notc)return llm(q,retried,true);
   if(res.status===429)throw {code:"rate_limited"};
   if(!res.ok){var tx="";try{tx=(await res.json()).error.message}catch(e){}throw {code:"http",message:res.status+" "+tx.slice(0,90)}}
   var j=await res.json(),txt=pv==="gemini"?j.candidates[0].content.parts[0].text:j.choices[0].message.content;
