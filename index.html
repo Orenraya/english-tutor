@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>שיחה באנגלית</title>
+<meta name="theme-color" content="#2f6f5e">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d2327;--mute:#6b7378;--pri:#2f6f5e;--priInk:#fff;--ai:#e8efe9;--me:#dfe8f5;--ok:#e3f3e6;--okInk:#1f5a2c;--line:#dcd8cf;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#14181a;--card:#1d2326;--ink:#e9ecec;--mute:#98a2a6;--pri:#5fb59d;--priInk:#0c1a16;--ai:#222c29;--me:#243145;--ok:#1d3223;--okInk:#9ad7a6;--line:#2c3437}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#14181a;--card:#1d2326;--ink:#e9ecec;--mute:#98a2a6;--pri:#5fb59d;--priInk:#0c1a16;--ai:#222c29;--me:#243145;--ok:#1d3223;--okInk:#9ad7a6;--line:#2c3437}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew",Arial,sans-serif;display:flex;flex-direction:column;height:100%}
+header{padding:10px 14px 6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:18px;margin:0}
+.ctl{display:flex;gap:6px;align-items:center}
+select,button{font:inherit;color:inherit}
+select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 14px 8px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:14px}
+.chip.on{background:var(--pri);color:var(--priInk);border-color:var(--pri)}
+#chat{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:8px}
+.b{max-width:86%;padding:10px 13px;border-radius:16px;line-height:1.45;font-size:16px;white-space:pre-wrap;word-wrap:break-word}
+.b.ai{background:var(--ai);align-self:flex-start;direction:ltr;text-align:left;border-bottom-left-radius:4px}
+.b.me{background:var(--me);align-self:flex-end;direction:ltr;text-align:left;border-bottom-right-radius:4px}
+.fx{align-self:flex-end;max-width:86%;background:var(--ok);color:var(--okInk);border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.4}
+.fx .en{direction:ltr;text-align:left;font-weight:600;display:block;margin-bottom:3px}
+.sp{background:none;border:0;font-size:15px;padding:0 0 0 6px;opacity:.7}
+.note{align-self:center;color:var(--mute);font-size:13px;text-align:center;padding:4px 10px}
+.bar{display:flex;gap:8px;align-items:center;padding:8px 12px 10px;background:var(--card);border-top:1px solid var(--line)}
+#inp{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:22px;padding:11px 15px;font-size:16px;direction:ltr;text-align:left;min-width:0}
+.rb{width:44px;height:44px;border-radius:50%;border:0;background:var(--pri);color:var(--priInk);font-size:19px;flex:none}
+.rb.rec{background:#c0392b;color:#fff}
+.rb:disabled{opacity:.5}
+.dots span{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:var(--mute);animation:d 1s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes d{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.st{text-align:center;padding:7px 12px;font-size:14px;font-weight:600;color:var(--pri);background:var(--card);border-top:1px solid var(--line)}
+.st[hidden]{display:none}
+.rb.rec{animation:p 1.2s infinite}
+@keyframes p{50%{opacity:.6}}
+.set{margin:0 14px 8px;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.set[hidden]{display:none}
+.set input,.set select{width:100%;margin-top:3px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;color:var(--ink);font-size:15px}
+.hint{color:var(--mute);font-size:12px;direction:rtl}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗣️ שיחה באנגלית</h1>
+  <div class="ctl">
+    <select id="lvl" aria-label="רמה">
+      <option value="beginner">מתחיל</option>
+      <option value="intermediate" selected>בינוני</option>
+      <option value="advanced">מתקדם</option>
+    </select>
+    <button class="sp" id="gear" title="הגדרות" style="font-size:20px;opacity:1">⚙️</button>
+    <button class="sp" id="vol" title="הקראה" style="font-size:20px;opacity:1">🔊</button>
+  </div>
+</header>
+<div class="set" id="set" hidden>
+  <label>ספק<select id="prov"><option value="gemini">Google Gemini (חינמי)</option><option value="groq">Groq (חינמי)</option></select></label>
+  <label>מפתח API<input id="key" type="password" dir="ltr" placeholder="paste key here" autocomplete="off"></label>
+  <label>מודל<input id="mdl" dir="ltr" autocomplete="off"></label>
+  <div class="hint" id="hint"></div>
+  <button class="chip on" id="sv">שמירה</button>
+</div>
+<div class="chips" id="chips"></div>
+<div id="chat"></div>
+<div id="st" class="st" hidden></div>
+<div class="bar">
+  <button class="rb" id="vc" title="שיחה קולית">📞</button>
+  <button class="rb" id="mic" title="הקלטה">🎤</button>
+  <input id="inp" placeholder="Type in English…" autocomplete="off" autocapitalize="sentences" enterkeyhint="send">
+  <button class="rb" id="go" title="שליחה">➤</button>
+</div>
+<script>
+var TOPICS=[["Free talk","שיחה חופשית"],["Daily life","חיי יום-יום"],["Travel","טיולים"],["Food","אוכל"],["Work","עבודה"],["Movies & music","סרטים ומוסיקה"],["Technology","טכנולוגיה"],["Hobbies","תחביבים"],["Health & sport","בריאות וספורט"]];
+var topic=TOPICS[0][0],hist=[],busy=false,speak=true,sample=null,voice=false;
+var chat=document.getElementById("chat"),inp=document.getElementById("inp"),go=document.getElementById("go"),mic=document.getElementById("mic"),vol=document.getElementById("vol"),lvl=document.getElementById("lvl");
+
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function scroll(){chat.scrollTop=chat.scrollHeight}
+function say(t,cb){var done=false;function fin(){if(done)return;done=true;if(cb)cb()}
+  if((!speak&&!voice)||!window.speechSynthesis){fin();return}
+  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=.95;u.onend=fin;u.onerror=fin;speechSynthesis.speak(u);
+    setTimeout(function(){if(!done){try{speechSynthesis.cancel()}catch(e){}fin()}},Math.max(5000,t.length*130))}catch(e){fin()}}
+function note(t){chat.appendChild(el("div","note",t));scroll()}
+
+var chipsEl=document.getElementById("chips");
+TOPICS.forEach(function(t){var b=el("button","chip"+(t[0]===topic?" on":""),t[1]);b.onclick=function(){topic=t[0];[].forEach.call(chipsEl.children,function(c){c.classList.remove("on")});b.classList.add("on");if(voice)stopVoice();hist=[];chat.innerHTML="";note("נושא: "+t[1]);ask(null)};chipsEl.appendChild(b)});
+lvl.onchange=function(){note("הרמה עודכנה")};
+vol.onclick=function(){speak=!speak;vol.textContent=speak?"🔊":"🔇";if(!speak&&window.speechSynthesis)speechSynthesis.cancel()};
+
+function prompt_(msg){
+  var lv={beginner:"beginner (A1-A2): short, simple sentences",intermediate:"intermediate (B1-B2)",advanced:"advanced (C1): richer vocabulary and idioms"}[lvl.value];
+  var h=hist.slice(-12).map(function(m){return (m.role==="me"?"Learner: ":"Tutor: ")+m.text}).join("\n");
+  return "You are a warm, encouraging English conversation tutor for a Hebrew speaker. Level: "+lv+". Topic: "+topic+".\n"+
+  "Conversation so far:\n"+(h||"(none yet)")+"\n\n"+
+  (msg?"Learner's newest message: "+JSON.stringify(msg)+"\n":"Start the conversation with a friendly opening question about the topic.\n")+
+  "Return ONLY a JSON object, no markdown, with keys:\n"+
+  "\"corrected\": the learner's newest message with grammar, spelling and word-choice mistakes fixed (empty string if it had no mistakes or there is no learner message),\n"+
+  "\"explanation\": a short, friendly explanation IN HEBREW of what was wrong and why (empty string if no mistakes),\n"+
+  "\"reply\": your natural reply in English (1-3 short sentences) that reacts to what they said and ends with one question to keep the conversation going.";
+}
+
+async function ask(msg){
+  if(busy)return;busy=true;go.disabled=true;var fixedTxt="";if(voice)stat("חושב…");
+  var d=el("div","b ai");d.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';chat.appendChild(d);scroll();
+  try{
+    var r=await llm(prompt_(msg));
+    if(typeof r==="string"){try{r=JSON.parse(r)}catch(e){r={reply:r}}}
+    d.remove();
+    if(msg){
+      var c=(r.corrected||"").trim();
+      if(c&&c.toLowerCase().replace(/[^a-z0-9 ]/g,"")!==msg.toLowerCase().replace(/[^a-z0-9 ]/g,"")){
+        fixedTxt=c;var f=el("div","fx");var en=el("span","en","✏️ "+c);f.appendChild(en);f.appendChild(document.createTextNode(r.explanation||""));chat.appendChild(f);
+      }else{chat.appendChild(el("div","fx","👍 מעולה, אין טעויות!"))}
+    }
+    var reply=(r.reply||"").trim()||"Tell me more!";
+    var b=el("div","b ai",reply);var s=el("button","sp","🔈");s.onclick=function(){var o=speak;speak=true;say(reply);speak=o};b.appendChild(s);chat.appendChild(b);
+    hist.push({role:"ai",text:reply});
+    if(voice){stat("מדבר…");var nx=function(){say(reply,listen)};if(fixedTxt)say("Better: "+fixedTxt+".",nx);else nx()}else say(reply);
+  }catch(e){
+    d.remove();
+    var m=e&&e.code==="none"?"חסר מפתח API. לחצו על ⚙️ והזינו מפתח חינמי.":e&&e.code==="rate_limited"?"יותר מדי בקשות, נסו שוב בעוד רגע.":e&&e.code==="http"?"שגיאה מהשירות: "+e.message:"משהו השתבש, נסו לשלוח שוב.";
+    note(m);if(msg)hist.pop();if(voice)stopVoice();
+  }
+  busy=false;go.disabled=false;scroll();
+}
+
+function send(){
+  var t=inp.value.trim();if(!t||busy)return;inp.value="";
+  chat.appendChild(el("div","b me",t));hist.push({role:"me",text:t});scroll();ask(t);
+}
+go.onclick=send;
+inp.addEventListener("keydown",function(e){if(e.key==="Enter")send()});
+
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,on=false;
+if(!SR){mic.style.display="none"}else{
+  mic.onclick=function(){
+    if(on){rec&&rec.stop();return}
+    try{
+      rec=new SR();rec.lang="en-US";rec.interimResults=true;rec.continuous=false;
+      if(window.speechSynthesis)speechSynthesis.cancel();
+      rec.onstart=function(){on=true;mic.classList.add("rec")};
+      rec.onresult=function(e){var t="";for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;inp.value=t};
+      rec.onend=function(){on=false;mic.classList.remove("rec");if(inp.value.trim())send()};
+      rec.onerror=function(){on=false;mic.classList.remove("rec")};
+      rec.start();
+    }catch(e){note("הקלטה לא זמינה במכשיר הזה")}
+  };
+}
+
+var vc=document.getElementById("vc"),st=document.getElementById("st"),vrec=null,vtries=0;
+function stat(t){if(!t){st.hidden=true;return}st.hidden=false;st.textContent=t}
+function listen(){
+  if(!voice||busy)return;
+  try{
+    if(window.speechSynthesis)speechSynthesis.cancel();
+    var txt="";
+    vrec=new SR();vrec.lang="en-US";vrec.interimResults=true;vrec.continuous=false;
+    vrec.onstart=function(){stat("🎤 מקשיב… דברו באנגלית");vc.classList.add("rec")};
+    vrec.onresult=function(e){txt="";for(var i=0;i<e.results.length;i++)txt+=e.results[i][0].transcript;inp.value=txt};
+    vrec.onerror=function(e){if(e.error==="not-allowed"||e.error==="service-not-allowed"){note("אין הרשאה למיקרופון");stopVoice()}};
+    vrec.onend=function(){
+      vc.classList.remove("rec");if(!voice)return;
+      var t=(txt||"").trim();
+      if(t){vtries=0;inp.value=t;send()}
+      else{vtries++;if(vtries>=3){note("לא שמעתי כלום, השיחה הקולית הופסקה");stopVoice()}else setTimeout(listen,300)}
+    };
+    vrec.start();
+  }catch(e){stopVoice()}
+}
+function startVoice(){
+  if(!SR){note("זיהוי דיבור לא נתמך בדפדפן הזה. נסו Chrome באנדרואיד.");return}
+  voice=true;vtries=0;lock();vc.textContent="⏹";vc.title="עצירה";mic.disabled=true;
+  note("שיחה קולית פעילה. דברו כשמופיע ״מקשיב״, ואני אענה בקול.");
+  var last=hist.length?hist[hist.length-1]:null;
+  if(busy)stat("חושב…");else if(last&&last.role==="ai"){stat("מדבר…");say(last.text,listen)}else listen();
+}
+function stopVoice(){voice=false;try{wl&&wl.release()}catch(e){}wl=null;try{vrec&&vrec.abort()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel();vc.textContent="📞";vc.title="שיחה קולית";vc.classList.remove("rec");mic.disabled=false;stat("")}
+vc.onclick=function(){voice?stopVoice():startVoice()};
+note("בחרו נושא, וענו באנגלית. אני אתקן את הדקדוק ואמשיך את השיחה. לשיחה קולית לחצו על 📞.");
+var DEF={gemini:"gemini-2.5-flash",groq:"llama-3.3-70b-versatile"},HINT={gemini:"מפתח חינמי: aistudio.google.com/apikey",groq:"מפתח חינמי: console.groq.com/keys"},wl=null;
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){}return ""}
+async function lock(){try{wl=await navigator.wakeLock.request("screen")}catch(e){}}
+var setEl=document.getElementById("set"),prov=document.getElementById("prov"),kEl=document.getElementById("key"),mEl=document.getElementById("mdl"),hEl=document.getElementById("hint");
+function fill(p){prov.value=p;kEl.value=ls("k_"+p);mEl.value=ls("m_"+p)||DEF[p];hEl.textContent=HINT[p]+". המפתח נשמר רק במכשיר שלכם."}
+prov.onchange=function(){fill(prov.value)};
+document.getElementById("gear").onclick=function(){setEl.hidden=!setEl.hidden};
+document.getElementById("sv").onclick=function(){var p=prov.value;ls("prov",p);ls("k_"+p,kEl.value.trim());ls("m_"+p,mEl.value.trim()||DEF[p]);setEl.hidden=true;note("ההגדרות נשמרו");if(!hist.length&&kEl.value.trim())ask(null)};
+fill(ls("prov")||"gemini");
+async function llm(q){
+  var pv=ls("prov")||"gemini",k=ls("k_"+pv),m=ls("m_"+pv)||DEF[pv],res;
+  if(!k)throw {code:"none"};
+  if(pv==="gemini"){
+    res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(m)+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":k},body:JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:{responseMimeType:"application/json",temperature:.8}})});
+  }else{
+    res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+k},body:JSON.stringify({model:m,messages:[{role:"user",content:q}],response_format:{type:"json_object"},temperature:.8})});
+  }
+  if(res.status===429)throw {code:"rate_limited"};
+  if(!res.ok){var tx="";try{tx=(await res.json()).error.message}catch(e){}throw {code:"http",message:res.status+" "+tx.slice(0,90)}}
+  var j=await res.json(),txt=pv==="gemini"?j.candidates[0].content.parts[0].text:j.choices[0].message.content;
+  try{return JSON.parse(txt.replace(/```json|```/g,"").trim())}catch(e){return {reply:txt}}
+}
+if(ls("k_"+(ls("prov")||"gemini")))ask(null);else{note("לפני שמתחילים: הזינו מפתח API חינמי.");setEl.hidden=false}
+</script>
+</body>
+</html>
