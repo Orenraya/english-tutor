@@ -183,7 +183,7 @@ function startVoice(){
 function stopVoice(){voice=false;try{wl&&wl.release()}catch(e){}wl=null;try{vrec&&vrec.abort()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel();vc.textContent="📞";vc.title="שיחה קולית";vc.classList.remove("rec");mic.disabled=false;stat("")}
 vc.onclick=function(){voice?stopVoice():startVoice()};
 note("בחרו נושא, וענו באנגלית. אני אתקן את הדקדוק ואמשיך את השיחה. לשיחה קולית לחצו על 📞.");
-var DEF={gemini:"gemini-2.5-flash",groq:"llama-3.3-70b-versatile"},HINT={gemini:"מפתח חינמי: aistudio.google.com/apikey",groq:"מפתח חינמי: console.groq.com/keys"},wl=null;
+var DEF={gemini:"gemini-flash-latest",groq:"llama-3.3-70b-versatile"},HINT={gemini:"מפתח חינמי: aistudio.google.com/apikey",groq:"מפתח חינמי: console.groq.com/keys"},wl=null;
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){}return ""}
 async function lock(){try{wl=await navigator.wakeLock.request("screen")}catch(e){}}
 var setEl=document.getElementById("set"),prov=document.getElementById("prov"),kEl=document.getElementById("key"),mEl=document.getElementById("mdl"),hEl=document.getElementById("hint");
@@ -192,7 +192,18 @@ prov.onchange=function(){fill(prov.value)};
 document.getElementById("gear").onclick=function(){setEl.hidden=!setEl.hidden};
 document.getElementById("sv").onclick=function(){var p=prov.value;ls("prov",p);ls("k_"+p,kEl.value.trim());ls("m_"+p,mEl.value.trim()||DEF[p]);setEl.hidden=true;note("ההגדרות נשמרו");if(!hist.length&&kEl.value.trim())ask(null)};
 fill(ls("prov")||"gemini");
-async function llm(q){
+async function pickGemini(k){
+  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",{headers:{"x-goog-api-key":k}});
+  var j=await r.json(),best=null,bv=-1;
+  (j.models||[]).forEach(function(x){
+    var n=(x.name||"").replace("models/",""),mt=/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?$/.exec(n);
+    if(!mt||(x.supportedGenerationMethods||[]).indexOf("generateContent")<0)return;
+    var v=parseFloat(mt[1])-(mt[2]?0.001:0);
+    if(v>bv){bv=v;best=n}
+  });
+  return best
+}
+async function llm(q,retried){
   var pv=ls("prov")||"gemini",k=ls("k_"+pv),m=ls("m_"+pv)||DEF[pv],res;
   if(!k)throw {code:"none"};
   if(pv==="gemini"){
@@ -200,6 +211,7 @@ async function llm(q){
   }else{
     res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+k},body:JSON.stringify({model:m,messages:[{role:"user",content:q}],response_format:{type:"json_object"},temperature:.8})});
   }
+  if(res.status===404&&pv==="gemini"&&!retried){var nm=await pickGemini(k).catch(function(){});if(nm&&nm!==m){ls("m_gemini",nm);mEl.value=nm;note("המודל עודכן אוטומטית: "+nm);return llm(q,true)}}
   if(res.status===429)throw {code:"rate_limited"};
   if(!res.ok){var tx="";try{tx=(await res.json()).error.message}catch(e){}throw {code:"http",message:res.status+" "+tx.slice(0,90)}}
   var j=await res.json(),txt=pv==="gemini"?j.candidates[0].content.parts[0].text:j.choices[0].message.content;
